@@ -34,7 +34,7 @@ final.elf:main.o atmega328p_startup.o
 
 
 dissass:
-	avr-objdump -D ./final.elf >> diss.elf
+	avr-objdump -D ./final.elf >> diss_elf.txt
 
 
 

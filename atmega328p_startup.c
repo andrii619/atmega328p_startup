@@ -7,10 +7,20 @@
 int main(void);
 
 
-#define SRAM_START 0x0100
-#define SRAM_END 0x08FF
-#define SRAM_SIZE 2048
+// #define SRAM_START 0x0100
+// #define SRAM_END 0x08FF
+// #define SRAM_SIZE 2048
 
+
+#define SRAM_START 0x800100
+#define SRAM_END 0x8008ff
+#define SRAM_END_L 0xff
+#define SRAM_END_H 0x08
+
+
+#define SPH 0x3E
+#define SPL 0x3D
+//const uint32_t RAMEND = SRAM_END;
 
 
 void vector_table(void) __attribute__((naked)) __attribute__((section (".isr_vector")));
@@ -55,7 +65,18 @@ __attribute__((naked)) void exit(void)  {
 
 
 
-void Reset_Handler(void){
+__attribute__((naked)) void Reset_Handler(void){
+	
+	// load SRAMEND address into r29,r28
+	asm volatile("ldi r29, %0"::"M"(SRAM_END_H):);
+	asm volatile("ldi r28, %0"::"M"(SRAM_END_L):);
+	
+	// save the SRAMEND into SPH and SPL to init the SP
+	asm volatile("out %0, r28"::"M"(SPL):);
+	asm volatile("out %0, r29"::"M"(SPH):);
+	asm volatile("sei");		// enable interrupts
+	
+	
 	
 	main();
 	
