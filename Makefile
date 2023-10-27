@@ -15,19 +15,19 @@ CCFLAGS=-c -mmcu=$(ARCH) -std=gnu11 -ffreestanding -Wall -O0
 # nostdlib - do not link to standard C library
 # -Wl - pass in a linker argument
 # -Map - linker generates a Map file 
-LDFLAGS=-mmcu=$(ARCH) -nostdlib -T avr_linker.ld -Wl,-Map=final.map
+LDFLAGS=-mmcu=$(ARCH) -nostdlib -T atmega328p_linker.ld -Wl,-Map=final.map
 
 
 main.o:main.c
 	$(CC) $(CCFLAGS) $^ -o $@
 
 
-avr_startup.o:avr_startup.c
+atmega328p_startup.o:atmega328p_startup.c
 	$(CC) $(CCFLAGS) $^ -o $@
 
 
 
-final.elf:main.o avr_startup.o
+final.elf:main.o atmega328p_startup.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
 
