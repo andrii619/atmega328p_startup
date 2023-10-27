@@ -20,6 +20,7 @@ int main(void);
 
 #define SPH 0x3E
 #define SPL 0x3D
+#define SREG 0x3F
 //const uint32_t RAMEND = SRAM_END;
 
 
@@ -66,6 +67,11 @@ __attribute__((naked)) void exit(void)  {
 
 
 __attribute__((naked)) void Reset_Handler(void){
+	
+	// init SREG by writing all zeroes to it. XOR R1, R1 will set R1 to zero
+	asm volatile("eor r1,r1");
+	asm volatile("out %0, r1"::"M"(SREG):);
+	
 	
 	// load SRAMEND address into r29,r28
 	asm volatile("ldi r29, %0"::"M"(SRAM_END_H):);
