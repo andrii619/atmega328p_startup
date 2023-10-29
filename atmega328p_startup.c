@@ -1,8 +1,43 @@
+/**
+ * FLASH is word(uint16_t) addressable
+ * SRAM is half-word addressable(uint8_t)
+ * 
+ * 
+ * .bss: Static uninitialized
+ * .common: global uninitialized (we can merge common and bss sections)
+ * 		Commons only appear before the linking stage. Commons are what later goes into the bss or data‚ 
+ * 		but it's up to the linker to decide where it goes. This allows you to have the same variable defined in 
+ * 		different compilation units. As far as I know this is mostly to allow some ancient header files that had int foo; in them instead of extern int foo;
+ * 
+ * 
+*/
 
 
+/**
+ * FLASH:
+ * 			<---- x16 ----->
+ *          .isr_vector
+ *          .text 
+ *          .rodata (constant data)
+ *          .data (initialized global and static variables)
+ *          ...
+ *          ...
+ *          bootloader
+ * 
+ * 
+ * 
+ * SRAM:
+ * 			<----x8-------->
+ * 			.data (copied from flash)
+ * 			.bss 
+ * 			heap
+ * 			...
+ * 			stack
+ * 			
+*/
 
 #include <stdint.h>
-
+#include <stdlib.h>
 
 int main(void);
 
@@ -23,6 +58,14 @@ int main(void);
 #define SREG 0x3F
 //const uint32_t RAMEND = SRAM_END;
 
+
+
+extern uint16_t __bss_start;
+extern uint16_t __bss_end;
+
+extern uint16_t __data_start;
+extern uint16_t __data_end;
+extern uint16_t __data_load_addr; // addr of data in sram
 
 void vector_table(void) __attribute__((naked)) __attribute__((section (".isr_vector")));
 //void _exit(void) __attribute__((naked));
@@ -59,12 +102,53 @@ void SPM_Handler(void) __attribute__ ((weak, alias("Default_Handler")));
 
 // implement reset handler
 
-__attribute__((naked)) void exit(void)  {
+// __attribute__((naked)) void __exit(void)  {
+// 	asm volatile("cli");
+// 	for(;;);
+// }
+
+
+// B is placed in 000001DC
+// bss start:000001DC        // 008001dc 
+// bss end:00000296          // 00800296
+// data load 00002EF2        // 00002ef2
+// data start:00000100       // 00800100
+// data end:000001DC         // 008001dc
+// B is placed in 000001D
+
+
+__attribute__((naked)) void __exit(void)  {
 	asm volatile("cli");
 	for(;;);
 }
 
+// overload the copy data funcion from std C library, need the freestanding compile flag
+void __do_copy_data(void){
+	uint16_t size_data = &__data_end - &__data_start;
+    uint16_t *pDst = (uint16_t*)&__data_start; // sram
+    //uint32_t *pSrc = (uint32_t*)&_etext; // flash, end of rodata section
+    uint16_t *pSrc = (uint16_t*)&__data_load_addr;
 
+    for(uint16_t i =0; i< size_data;i++){
+        *pDst++ = *pSrc++;
+    }
+}
+
+// // overload the clear bss from std C lib
+void __do_clear_bss(void){
+	uint16_t size_bss = &__bss_end - &__bss_start;
+	//ram is 8bit wide
+    uint8_t* pDst = (uint8_t*)(&__bss_start);
+    for(uint16_t i =0; i< size_bss;i++){
+        *pDst++ = 0;
+    }
+}
+
+
+
+
+
+void __exit(void);
 
 __attribute__((naked)) void Reset_Handler(void){
 	
@@ -82,11 +166,14 @@ __attribute__((naked)) void Reset_Handler(void){
 	asm volatile("out %0, r29"::"M"(SPH):);
 	asm volatile("sei");		// enable interrupts
 	
+	__do_copy_data();
 	
+	__do_clear_bss();
+
 	
 	main();
 	
-	exit();
+	__exit();
 }
 
 void Default_Handler(void){

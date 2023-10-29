@@ -1,14 +1,22 @@
 
 
-
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <util/delay.h>
 #include <stdint.h>
-
-
+//#include "uart.h"
+#include <stdio.h>
 // #include <avr/io.h>
 // #include <avr/pgmspace.h>
 
 
-const unsigned char mydata[11][10] = //PROGMEM =
+int m;
+int r;
+int q;
+int p;
+
+
+const unsigned char my_const_array[11][10] = //PROGMEM =
 {
     {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09},
     {0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,0x10,0x11,0x12,0x13},
@@ -24,9 +32,50 @@ const unsigned char mydata[11][10] = //PROGMEM =
 };
 
 
-int main(){
+// for the bss section
+//__attribute((section(".bss"))) 
+
+char volatile tmp[22];
 
 
 
-for(;;);
+
+
+
+
+
+char init_char_arr[] = {'H','E','L','L','O','F','F','F','F','F','F','0','F'};
+
+
+// int main(){
+
+
+
+// for(;;);
+// }
+
+
+
+#define BLINK_DELAY_MS 1000
+ 
+int main (void)
+{
+ /* set pin 5 of PORTB for output*/
+ //init_serial();
+ init_char_arr[0] = (char)0xFF;
+ 
+ DDRB |= _BV(DDB5);
+ //int i=0;
+ while(1) {
+  /* set pin 5 high to turn led on */
+  PORTB |= _BV(PORTB5);
+  _delay_ms(BLINK_DELAY_MS);
+ 
+  /* set pin 5 low to turn led off */
+  PORTB &= ~_BV(PORTB5);
+  _delay_ms(BLINK_DELAY_MS);
+  
+   //i+=1;
+ }
+
 }
